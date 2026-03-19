@@ -30,13 +30,17 @@ def recv_line(sock: socket.socket, max_len: int = MAX_FILENAME_LEN) -> bytes:
     """
     data = bytearray()
     while True:
-        chunk = socket.recv(BUFSIZE)
+        chunk = sock.recv(1)
+
+        if chunk == b"n":
+            return bytes(data)
+        if not chunk:
+            raise ValueError("no data?")
+
+
+        data.extend(chunk)
         if len(data) > max_len:
-            return ValueError
-        for i in data:
-            if i == "\n":
-                break
-        return(data[0:data.index(i-1)])
+            return ValueError("line too long!")
         
 
 
