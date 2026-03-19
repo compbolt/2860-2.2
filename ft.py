@@ -6,6 +6,7 @@ import struct
 import sys
 from typing import Tuple
 
+#https://docs.python.org/3/library/socket.html#functions
 #############
 # Constants #
 #############
@@ -63,14 +64,16 @@ def handle_client(conn: socket.socket, outdir: str) -> None:
             filename = raw_line.decode('utf-8')
         except UnicodeDecodeError:
             # Send LINE_ERR if filename is not valid UTF-8.
-            # TODO: write your code here.
+            # tODO: write your code here.
+            conn.sendall(LINE_ERR)
             return
 
         # Sanitize filename (strip directory components).
         filename = os.path.basename(filename)
         if filename == '':
             # Send LINE_ERR if invalid filename.
-            # TODO: write your code here.
+            # tODO: write your code here.
+            conn.sendall(LINE_ERR)
             return
 
         # Prepare output path.
@@ -80,11 +83,13 @@ def handle_client(conn: socket.socket, outdir: str) -> None:
         # Check if file already exists.
         if os.path.exists(dest_path):
             # Send LINE_ERR if file exists.
-            # TODO: write your code here.
+            # ToDO: write your code here.
+            conn.sendall(LINE_ERR)
             return
         else:
             # Send LINE_OK to proceed.
-            # TODO: write your code here.
+            # TOdO: write your code here.
+            conn.sendall(LINE_OK)
 
         # Receive 8-byte unsigned integer (network byte order).
         hdr = bytearray()
