@@ -33,7 +33,7 @@ def recv_line(sock: socket.socket, max_len: int = MAX_FILENAME_LEN) -> bytes:
     while True:
         chunk = sock.recv(1)
 
-        if chunk == b"n":
+        if chunk == b"\n":
             return bytes(data)
         if not chunk:
             raise ValueError("no data?")
@@ -93,7 +93,13 @@ def handle_client(conn: socket.socket, outdir: str) -> None:
 
         # Receive 8-byte unsigned integer (network byte order).
         hdr = bytearray()
-        # TODO: write your code here.
+        # TODo: write your code here.
+        while len(hdr) != 8:
+            chunk = conn.recv( 8 - len(hdr))
+            if not chunk:
+                raise ValueError("no data!")
+            hdr.extend(chunk)
+
 
         (file_size,) = struct.unpack('!Q', hdr)
 
@@ -102,8 +108,12 @@ def handle_client(conn: socket.socket, outdir: str) -> None:
         try:
             with open(dest_path, 'wb') as f:
                 while remaining > 0:
-                    # Receive a chunk (up to BUFSIZE or remaining).
-                    # TODO: write your code here.
+                    # Receive a chunk (up to BUFSIZE or remaining). (min of buf or remain)
+                    # TOdO: write your code here.
+
+                    chunk = conn.recv(min(BUFSIZE, remaining)) 
+                    if not chunk:
+                        raise ValueError("no data!")
                     f.write(chunk)
                     remaining -= len(chunk)
                 f.flush()
@@ -117,7 +127,9 @@ def handle_client(conn: socket.socket, outdir: str) -> None:
             raise
 
         # Send final LINE_OK to acknowledge successful receipt.
-        # TODO: write your code here.
+        # tODO: write your code here.
+        conn.sendall(LINE_OK)
+
 
     except Exception:
         # Swallow exceptions to keep server alive; optionally could log
@@ -134,7 +146,11 @@ def run_server(port: int, outdir: str, ipv6: bool) -> None:
     family = socket.AF_INET6 if ipv6 else socket.AF_INET
     bind_addr = '::' if ipv6 else '0.0.0.0'
     # Create server socket, bind, listen, and accept in an infinite loop.
-    # TODO: write your code here.
+    # ToDO: write your code here.
+
+    serverSocket = socket.socket(family, socket.SOCK_STREAM)
+
+    while True:
 
 
 ##########
