@@ -41,7 +41,7 @@ def recv_line(sock: socket.socket, max_len: int = MAX_FILENAME_LEN) -> bytes:
 
         data.extend(chunk)
         if len(data) > max_len:
-            return ValueError("line too long!")
+            raise ValueError("line too long!")
         
 
 
@@ -149,8 +149,11 @@ def run_server(port: int, outdir: str, ipv6: bool) -> None:
     # ToDO: write your code here.
 
     serverSocket = socket.socket(family, socket.SOCK_STREAM)
+    serverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    serverSocket.bind((bind_addr, port))
 
     while True:
+        
 
 
 ##########
