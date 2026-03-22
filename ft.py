@@ -191,8 +191,11 @@ def run_client(server_ip: str, port: int, file_path: str, ipv6: bool) -> int:
         cliSock.sendall(struct.pack('!Q', file_size))
 
         with open(file_path, 'rb') as f:
-            while chunk := f.read(BUFSIZE):
-                cliSock.sendall(chunk)
+                    while True:
+                        chunk = f.read(BUFSIZE)
+                        if not chunk:
+                            break
+                        cliSock.sendall(chunk)
 
         lastResp = recv_line(cliSock)
         cliSock.close()
