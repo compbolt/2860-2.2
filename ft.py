@@ -30,6 +30,7 @@ def recv_line(sock: socket.socket, max_len: int = MAX_FILENAME_LEN) -> bytes:
     Raises a ValueError if more data than max_len is received.
     """
     data = bytearray()
+
     while True:
         chunk = sock.recv(1)
 
@@ -49,7 +50,7 @@ def recv_line(sock: socket.socket, max_len: int = MAX_FILENAME_LEN) -> bytes:
 # Server #
 ##########
 
-def handle_client(conn: socket.socket, outdir: str) -> None:
+def handle_client(cliCon: socket.socket, outdir: str) -> None:
     """Handle a single client:
     1) Read filepath and sanitise it.
     2) Check existence of <outdir>/<filename>-received
@@ -59,13 +60,13 @@ def handle_client(conn: socket.socket, outdir: str) -> None:
     """
     try:
         # Receive filename line (UTF-8).
-        raw_line = recv_line(conn)
+        raw_line = recv_line(cliCon)
         try:
             filename = raw_line.decode('utf-8')
         except UnicodeDecodeError:
             # Send LINE_ERR if filename is not valid UTF-8.
             # tODO: write your code here.
-            conn.sendall(LINE_ERR)
+            cliCon.sendall(LINE_ERR)
             return
 
         # Sanitize filename (strip directory components).
@@ -73,7 +74,7 @@ def handle_client(conn: socket.socket, outdir: str) -> None:
         if filename == '':
             # Send LINE_ERR if invalid filename.
             # tODO: write your code here.
-            conn.sendall(LINE_ERR)
+            cliCon.sendall(LINE_ERR)
             return
 
         # Prepare output path.
@@ -84,18 +85,18 @@ def handle_client(conn: socket.socket, outdir: str) -> None:
         if os.path.exists(dest_path):
             # Send LINE_ERR if file exists.
             # ToDO: write your code here.
-            conn.sendall(LINE_ERR)
+            cliCon.sendall(LINE_ERR)
             return
         else:
             # Send LINE_OK to proceed.
             # TOdO: write your code here.
-            conn.sendall(LINE_OK)
+            cliCon.sendall(LINE_OK)
 
         # Receive 8-byte unsigned integer (network byte order).
         hdr = bytearray()
         # TODo: write your code here.
         while len(hdr) != 8:
-            chunk = conn.recv( 8 - len(hdr))
+            chunk = cliCon.recv( 8 - len(hdr))
             if not chunk:
                 raise ValueError("no data!")
             hdr.extend(chunk)
@@ -111,7 +112,7 @@ def handle_client(conn: socket.socket, outdir: str) -> None:
                     # Receive a chunk (up to BUFSIZE or remaining). (min of buf or remain)
                     # TOdO: write your code here.
 
-                    chunk = conn.recv(min(BUFSIZE, remaining)) 
+                    chunk = cliCon.recv(min(BUFSIZE, remaining)) 
                     if not chunk:
                         raise ValueError("no data!")
                     f.write(chunk)
@@ -128,7 +129,7 @@ def handle_client(conn: socket.socket, outdir: str) -> None:
 
         # Send final LINE_OK to acknowledge successful receipt.
         # tODO: write your code here.
-        conn.sendall(LINE_OK)
+        cliCon.sendall(LINE_OK)
 
 
     except Exception:
@@ -148,12 +149,15 @@ def run_server(port: int, outdir: str, ipv6: bool) -> None:
     # Create server socket, bind, listen, and accept in an infinite loop.
     # ToDO: write your code here.
 
-    serverSocket = socket.socket(family, socket.SOCK_STREAM)
-    serverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    serverSocket.bind((bind_addr, port))
+    servSock = socket.socket(family, socket.SOCK_STREAM)
+    servSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    servSock.bind((bind_addr, port))
+    servSock.listen(5)
 
     while True:
-        
+        cliCon, cliaddr = servSock.accept()
+        handle_client(cliCon, outdir)
+        cliCon.close()
 
 
 ##########
@@ -161,7 +165,7 @@ def run_server(port: int, outdir: str, ipv6: bool) -> None:
 ##########
 
 def run_client(server_ip: str, port: int, file_path: str, ipv6: bool) -> int:
-    """Establish connection to server and send the specified file."""
+    """Establish cliConection to server and send the specified file."""
     # Resolve filename and size.
     if not os.path.isfile(file_path):
         print(f"Not a file: {file_path}", file=sys.stderr)
@@ -170,11 +174,43 @@ def run_client(server_ip: str, port: int, file_path: str, ipv6: bool) -> int:
     file_size = os.path.getsize(file_path)
 
     family = socket.AF_INET6 if ipv6 else socket.AF_INET
-    addr = (server_ip, port, 0, 0) if ipv6 else (server_ip, port)
+    cliaddr = (server_ip, port, 0, 0) if ipv6 else (server_ip, port)
 
     # Send filename, size, and file content (in chunks).
     # Wait for server responses according to protocol.
-    # TODO: write your code here.
+    # TODoO: write your code here.
+    try:
+        cliSock = socket.socket(family, socket.SOCK_STREAM)
+        cliSock.conect(cliaddr)
+
+        cliSock.sendall(filename.encode("utf-8") + b"\n")
+        resp1 = recv_line(cliSock)
+        if resp1 != b'OK':
+            cliSock.close()
+            return 1
+        cliSock.sendall(struct.pack('!Q', file_size))
+
+        with open(file_path, 'rb') as f:
+            while chunk := f.read(BUFSIZE):
+                cliSock.sendall(chunk)
+
+        lastResp = recv_line(cliSock)
+        cliSock.close()
+
+        if lastResp == b'OK':
+            return 0
+        else:
+            return 255
+        
+
+    except Exception:
+        return 255
+    
+
+
+
+
+
 
 
 ################
