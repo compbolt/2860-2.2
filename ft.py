@@ -165,7 +165,7 @@ def run_server(port: int, outdir: str, ipv6: bool) -> None:
 ##########
 
 def run_client(server_ip: str, port: int, file_path: str, ipv6: bool) -> int:
-    """Establish cliConection to server and send the specified file."""
+    """Establish connection to server and send the specified file."""
     # Resolve filename and size.
     if not os.path.isfile(file_path):
         print(f"Not a file: {file_path}", file=sys.stderr)
@@ -181,7 +181,7 @@ def run_client(server_ip: str, port: int, file_path: str, ipv6: bool) -> int:
     # TODoO: write your code here.
     try:
         cliSock = socket.socket(family, socket.SOCK_STREAM)
-        cliSock.conect(cliaddr)
+        cliSock.connect(cliaddr)
 
         cliSock.sendall(filename.encode("utf-8") + b"\n")
         resp1 = recv_line(cliSock)
